@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+/* import React, { useState } from 'react';
 import { useReactMediaRecorder } from 'react-media-recorder';
 import api from '../utils/api';
 
@@ -57,6 +57,59 @@ const VideoRecorder = ({ examId }) => {
       )}
       {status === 'uploaded' && <p className="text-green-500 mt-4">Video uploaded successfully!</p>}
       {status === 'error' && <p className="text-red-500 mt-4">Error uploading video. Please try again.</p>}
+    </div>
+  );
+};
+
+export default VideoRecorder; */
+
+
+import React, { useState, useRef } from 'react';
+
+const VideoRecorder = ({ onRecordingComplete }) => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [videoBlob, setVideoBlob] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const videoRef = useRef(null);
+
+  const startRecording = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    videoRef.current.srcObject = stream;
+    mediaRecorderRef.current = new MediaRecorder(stream);
+    
+    const chunks = [];
+    mediaRecorderRef.current.ondataavailable = (event) => chunks.push(event.data);
+    mediaRecorderRef.current.onstop = () => {
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      setVideoBlob(blob);
+      onRecordingComplete(blob);
+    };
+
+    mediaRecorderRef.current.start();
+    setIsRecording(true);
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current.stop();
+    setIsRecording(false);
+  };
+
+  return (
+    <div>
+      <video ref={videoRef} autoPlay muted />
+      {!isRecording && !videoBlob && (
+        <button onClick={startRecording} className="bg-green-500 text-white px-4 py-2 rounded">
+          Start Recording
+        </button>
+      )}
+      {isRecording && (
+        <button onClick={stopRecording} className="bg-red-500 text-white px-4 py-2 rounded">
+          Stop Recording
+        </button>
+      )}
+      {videoBlob && (
+        <video src={URL.createObjectURL(videoBlob)} controls />
+      )}
     </div>
   );
 };

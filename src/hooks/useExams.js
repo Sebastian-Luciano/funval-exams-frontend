@@ -6,17 +6,17 @@ export const useExams = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchExams();
-  }, []);
 
   const fetchExams = async () => {
     try {
+      setLoading(true);
       const response = await api.get('/exams');
       setExams(response.data);
-      setLoading(false);
+      setError(null);
     } catch (err) {
-      setError(err.message);
+      setError('Error al cargar los exámenes');
+      console.error(err);
+    } finally {
       setLoading(false);
     }
   };
@@ -27,31 +27,38 @@ export const useExams = () => {
       setExams([...exams, response.data]);
       return response.data;
     } catch (err) {
-      console.error('Error al crear examen:', err);
+      setError('Error al crear el examen');
+      console.error(err);
       throw err;
     }
   };
 
-  const updateExam = async (examId, examData) => {
+  const updateExam = async (id, examData) => {
     try {
-      const response = await api.put(`/exams/${examId}`, examData);
-      setExams(exams.map(exam => exam._id === examId ? response.data : exam));
+      const response = await api.put(`/exams/${id}`, examData);
+      setExams(exams.map(exam => exam._id === id ? response.data : exam));
       return response.data;
     } catch (err) {
-      setError(err.message);
+      setError('Error al actualizar el examen');
+      console.error(err);
       throw err;
     }
   };
 
-  const deleteExam = async (examId) => {
+  const deleteExam = async (id) => {
     try {
-      await api.delete(`/exams/${examId}`);
-      setExams(exams.filter(exam => exam._id !== examId));
+      await api.delete(`/exams/${id}`);
+      setExams(exams.filter(exam => exam._id !== id));
     } catch (err) {
-      setError(err.message);
+      setError('Error al eliminar el examen');
+      console.error(err);
       throw err;
     }
   };
 
-  return { exams, loading, error, createExam, updateExam, deleteExam, fetchExams };
+  useEffect(() => {
+    fetchExams();
+  }, []);
+
+  return { exams, loading, error, fetchExams, createExam, updateExam, deleteExam };
 };
