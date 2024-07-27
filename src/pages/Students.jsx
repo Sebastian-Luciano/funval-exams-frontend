@@ -60,6 +60,9 @@ import { useAuth } from '../hooks/useAuth';
 
 const Students = () => {
   const [students, setStudents] = useState([]);
+  const [levels, setLevels] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState('')
+  const [selectedLevel, setSelectedLevel] = useState('')
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user } = useAuth();
@@ -70,36 +73,47 @@ const Students = () => {
         const response = await api.get('/users/students');
         setStudents(response.data);
       } catch (err) {
-        setError('Error al cargar los estudiantes');
+        setError('Error fetching students');
         console.error(err);
-      } finally {
-        setLoading(false);
       }
     };
+
+    const fetchLevels = async () => {
+      try {
+        const response = await api.get('/levels')
+        setLevels(response.data);
+      } catch (error) {
+        setError('Error fetching levels')
+        console.error(err);
+      }
+    };
+
     fetchStudents();
+    fetchLevels();
   }, []);
 
-  const handleAssignLevel = async (studentId, level) => {
+  const handleAssignLevel = async () => {
+    if (!selectedStudent || !selectedLevel) {
+      alert('Please select both student and level');
+      return;
+    }
     try {
-      await api.post('/teachers/assign-students', {
-        studentIds: [studentId],
-        level
-      });
-      setStudents(students.map(student => 
-        student._id === studentId ? { ...student, level } : student
-      ));
-      alert('Nivel asignado con éxito');
+      const response = await api.post('/students/assign-level', { studentId: selectedStudent, levelId: selectedLevel });
+      console.log('Level assigned successfully:', response.data);
+      // Refresh students list after assigning level
+      const updatedStudents = await api.get('/students');
+      setStudents(updatedStudents.data);
     } catch (error) {
-      alert('Error al asignar el nivel: ' + error.message);
+      alert('Error assigning level: ' + error.message);
     }
   };
 
-  if (loading) return <Layout><p>Cargando estudiantes...</p></Layout>;
+  //if (loading) return <Layout><p>Cargando estudiantes...</p></Layout>;
   if (error) return <Layout><p>{error}</p></Layout>;
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold mb-4">Students</h1>
+      <h1 className="text-2xl font-bold mb-4">Assign Level to Students</h1>
       <table className="w-full border-collapse border border-gray-300">
         <thead>
           <tr className="bg-gray-100">
@@ -107,37 +121,41 @@ const Students = () => {
             <th className="border border-gray-300 p-2">Last Name</th>
             <th className="border border-gray-300 p-2">Email</th>
             <th className="border border-gray-300 p-2">Current Level</th>
-            {user.role === 'teacher' && (
-              <th className="border border-gray-300 p-2">Actions</th>
-            )}
+            <th className="border border-gray-300 p-2">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {students.map(student => (
+        {students.length === 0 ? (
+            <tr>
+              <td colSpan="5">No students found</td>
+            </tr>
+          ) : (
+            students.map(student => (
             <tr key={student._id}>
               <td className="border border-gray-300 p-2">{student.name}</td>
               <td className="border border-gray-300 p-2">{student.lastName}</td>
               <td className="border border-gray-300 p-2">{student.email}</td>
-              <td className="border border-gray-300 p-2">{student.level || 'No asignado'}</td>
-              {user.role === 'teacher' && (
-                <td className="border border-gray-300 p-2">
-                  <select
-                    value={student.level || ''}
-                    onChange={(e) => handleAssignLevel(student._id, e.target.value)}
-                    className="p-1 border rounded"
-                  >
-                    <option value="">Asignar nivel</option>
-                    <option value="Elementary">Elementary</option>
-                    <option value="A1">A1</option>
-                    <option value="A2">A2</option>
-                    <option value="B1">B1</option>
-                  </select>
-                </td>
-              )}
+              <td className="border border-gray-300 p-2">{student.currentLevel ? student.currentLevel.name : 'No asignado'}</td>
+
+              <td className="border border-gray-300 p-2 justify-center">
+                <select
+                  value={selectedLevel}
+                  onChange={(e) => setSelectedLevel(e.target.value)}
+                  className="p-1 border rounded"
+                >
+                  <option value="">Asignar nivel</option>
+                  {levels.map(level => (
+                    <option key={level._id} value={level._id}>{level.name}</option>
+                  ))}
+                </select>
+                <button type="submit" className="mx-1 right-0 bg-blue-500 text-white p-2 rounded" onClick={() => setSelectedStudent(student._id)}>Asignar</button>
+              </td>
             </tr>
-          ))}
+          ))
+        )}
         </tbody>
       </table>
+      <button onClick={handleAssignLevel} type="submit" className="left-0 mt-1 bg-blue-500 text-white p-2 rounded">Guardar cambios</button>
     </Layout>
   );
 };
