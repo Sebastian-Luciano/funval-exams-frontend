@@ -23,12 +23,14 @@ export const useExams = () => {
 
   const createExam = async (examData) => {
     try {
+      console.log('Enviando datos del examen:', examData);
       const response = await api.post('/exams', examData);
+      console.log('Respuesta del servidor:', response.data);
       setExams([...exams, response.data]);
       return response.data;
     } catch (err) {
-      setError('Error al crear el examen');
-      console.error(err);
+      console.error('Error al crear el examen:', err.response ? err.response.data : err.message);
+      setError('Error al crear el examen: ' + (err.response ? err.response.data.error : err.message));
       throw err;
     }
   };
