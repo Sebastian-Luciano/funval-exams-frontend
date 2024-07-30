@@ -1,61 +1,76 @@
-/* 
-import React, { useState, useEffect } from 'react';
+/* import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import { Link } from 'react-router-dom';
 import api from '../utils/api';
-import { useAuth } from '../hooks/useAuth';
 
 const Students = () => {
   const [students, setStudents] = useState([]);
   const [levels, setLevels] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState('');
-  const [selectedLevels, setSelectedLevels] = useState('');
+  const [selectedLevels, setSelectedLevels] = useState({});
   const [showModal, setShowModal] = useState(false);
   const [newLevelName, setNewLevelName] = useState('');
   const [newLevelDescription, setNewLevelDescription] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user } = useAuth();
   const [success, setSuccess] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [studentsResponse, levelsResponse] = await Promise.all([
-          api.get('/users/students'),
-          api.get('/levels')
-        ]);
-        setStudents(studentsResponse.data);
-        setLevels(levelsResponse.data);
-      } catch (err) {
-        setError('Error fetching data: ' + err.message);
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
-  const handleAssignLevel = async () => {
-    if (!selectedStudent || !selectedLevels) {
-      setError('Please select both a student and a level');
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [studentsResponse, levelsResponse] = await Promise.all([
+        api.get('/students'),
+        api.get('/levels')
+      ]);
+      
+      console.log('Respuesta de estudiantes:', studentsResponse.data);
+      console.log('Respuesta de niveles:', levelsResponse.data);
+  
+      setStudents(studentsResponse.data);
+      setLevels(levelsResponse.data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Error fetching data: ' + err.message);
+      setLoading(false);
+    }
+  };
+
+  const handleLevelChange = (studentId, levelId) => {
+    setSelectedLevels(prev => ({ ...prev, [studentId]: levelId }));
+  };
+
+  const handleAssignLevel = async (studentId) => {
+    const levelId = selectedLevels[studentId];
+    if (!levelId) {
+      setError('Por favor, selecciona un nivel para el estudiante');
       return;
     }
     try {
-      const response = await api.post('/students/assign-level', { studentId: selectedStudent, levelId: selectedLevels });
+      await api.post('/students/assign-level', { studentId, levelId });
+      
       setStudents(students.map(student => 
-        student._id === selectedStudent 
-          ? {...student, currentLevel: levels.find(l => l._id === selectedLevels)} 
+        student._id === studentId 
+          ? {...student, currentLevel: levels.find(l => l._id === levelId).name} 
           : student
       ));
-      setSuccess('Level assigned successfully');
+      
+      setSuccess('Nivel asignado exitosamente');
       setError(null);
+
+    setSelectedLevels(prev => {
+      const newSelected = {...prev};
+      delete newSelected[studentId];
+      return newSelected;
+    });
+    
+    await fetchData();
     } catch (error) {
-      setError('Error assigning level: ' + error.message);
-      console.error('Error assigning level:', error);
+      console.error('Error al asignar nivel:', error);
+      setError('Error al asignar nivel: ' + error.message);
     }
   };
 
@@ -64,18 +79,18 @@ const Students = () => {
     try {
       const response = await api.post('/levels', { name: newLevelName, description: newLevelDescription });
       setLevels([...levels, response.data]);
-      setSuccess('Level added successfully');
+      setSuccess('Nivel añadido exitosamente');
       setError(null);
       setNewLevelName('');
       setNewLevelDescription('');
       setShowModal(false);
     } catch (error) {
-      setError('Error adding level: ' + error.message);
-      setSuccess(null);
+      console.error('Error al añadir nivel:', error);
+      setError('Error al añadir nivel: ' + error.message);
     }
   };
 
-  if (loading) return <Layout><p>Loading students...</p></Layout>;
+  if (loading) return <Layout><p>Cargando estudiantes...</p></Layout>;
   if (error) return <Layout><p>{error}</p></Layout>;
 
   return (
@@ -92,37 +107,38 @@ const Students = () => {
           </tr>
         </thead>
         <tbody>
-        {students.length > 0 ? (
-            students.map(student => (
+          {students.map(student => (
             <tr key={student._id}>
               <td className="border border-gray-300 p-2">{student.name}</td>
               <td className="border border-gray-300 p-2">{student.lastName}</td>
               <td className="border border-gray-300 p-2">{student.email}</td>
-              <td className="border border-gray-300 p-2">{student.currentLevel ? student.currentLevel.name : 'No asignado'}</td>
-              <td className="border border-gray-300 p-2 justify-center">
+              <td className="border border-gray-300 p-2 text-center">{student.currentLevel || 'No asignado'}</td>
+              <td className="border border-gray-300 p-2">
                 <select
                   value={selectedLevels[student._id] || ''}
-                  onChange={(e) => setSelectedLevels({...selectedLevels, [student._id]: e.target.value})}
-                  className="p-1 border rounded"
+                  onChange={(e) => handleLevelChange(student._id, e.target.value)}
+                  className="p-1 border rounded w-40 text-center"
                 >
-                  <option value="">Asignar nivel</option>
+                  <option value="">{!student.currentLevel ?  'Seleccionar nivel' : student.currentLevel}</option>
                   {levels.map(level => (
                     <option key={level._id} value={level._id}>{level.name}</option>
                   ))}
                 </select>
-                <button className="mx-1 right-0 bg-blue-500 text-white p-2 rounded" onClick={() => setSelectedStudent(student._id)}>Asignar</button>
+                <button 
+                  className="ml-2 bg-blue-500 text-white p-2 rounded" 
+                  onClick={() => handleAssignLevel(student._id)}
+                >
+                  Asignar
+                </button>
               </td>
             </tr>
-          ))
-        ) : (
-          <tr>
-          <td colSpan="5">No students found</td>
-        </tr>
-        )}
+          ))}
         </tbody>
       </table>
-      <button onClick={handleAssignLevel} type="submit" className="left-0 mt-1 bg-blue-500 text-white p-2 rounded">Guardar cambios</button>
-      <Link onClick={() => setShowModal(true)} className="mt-4 bg-green-500 text-white px-4 py-2 rounded">Agregar Nivel</Link>
+      {success && <p className="text-green-500 mt-2">{success}</p>}
+      <button onClick={() => setShowModal(true)} className="mt-4 bg-green-500 text-white px-4 py-2 rounded">
+        Agregar Nivel
+      </button>
 
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
@@ -146,11 +162,8 @@ const Students = () => {
                   value={newLevelDescription}
                   onChange={(e) => setNewLevelDescription(e.target.value)}
                   className="border rounded px-2 py-1 w-full"
-                  required
                 />
               </div>
-              {error && <p className="text-red-500 mb-4">{error}</p>}
-              {success && <p className="text-green-500 mb-4">{success}</p>}
               <div className="flex justify-end">
                 <button
                   type="button"
@@ -178,7 +191,6 @@ export default Students; */
 
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import { Link } from 'react-router-dom';
 import api from '../utils/api';
 
 const Students = () => {
@@ -196,48 +208,22 @@ const Students = () => {
     fetchData();
   }, []);
 
-/*   const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [studentsResponse, levelsResponse] = await Promise.all([
-        api.get('/users/students'),
-        api.get('/levels')
-      ]);
-
-      // Asegurarse de que cada estudiante tenga un campo currentLevel
-      const processedStudents = studentsResponse.data.map(student => ({
-        ...student,
-        currentLevel: student.currentLevel || { name: 'No asignado' }
-      }));
-
-      setStudents(studentsResponse.data);
-      setLevels(levelsResponse.data);
-      setLoading(false);
-    } catch (err) {
-      setError('Error fetching data: ' + err.message);
-      setLoading(false);
-    }
-  };
- */
-
   const fetchData = async () => {
     try {
       setLoading(true);
       const [studentsResponse, levelsResponse] = await Promise.all([
-        api.get('/users/students'),
+        api.get('/students'),
         api.get('/levels')
       ]);
       
-      // Asegurarse de que cada estudiante tenga un campo currentLevel
-      const processedStudents = studentsResponse.data.map(student => ({
-        ...student,
-        currentLevel: student.currentLevel || { name: 'No asignado' }
-      }));
-      
-      setStudents(processedStudents);
+      console.log('Students response:', studentsResponse.data);
+      console.log('Levels response:', levelsResponse.data);
+  
+      setStudents(studentsResponse.data);
       setLevels(levelsResponse.data);
       setLoading(false);
     } catch (err) {
+      console.error('Error fetching data:', err);
       setError('Error fetching data: ' + err.message);
       setLoading(false);
     }
@@ -247,27 +233,6 @@ const Students = () => {
     setSelectedLevels(prev => ({ ...prev, [studentId]: levelId }));
   };
 
-/*   const handleAssignLevel = async (studentId) => {
-    const levelId = selectedLevels[studentId];
-    if (!levelId) {
-      setError('Please select a level for the student');
-      return;
-    }
-    try {
-      await api.post('/students/assign-level', { studentId, levelId });
-       setStudents(students.map(student =>
-        student._id === studentId
-          ? { ...student, currentLevel: levels.find(l => l._id === levelId) }
-          : student
-      ));
-      await fetchData();
-      setSuccess('Level assigned successfully');
-      setError(null);
-    } catch (error) {
-      setError('Error assigning level: ' + error.message);
-    }
-  }; */
-
   const handleAssignLevel = async (studentId) => {
     const levelId = selectedLevels[studentId];
     if (!levelId) {
@@ -276,10 +241,25 @@ const Students = () => {
     }
     try {
       await api.post('/students/assign-level', { studentId, levelId });
-      await fetchData(); // Recargar todos los datos
+      
+      setStudents(students.map(student => 
+        student._id === studentId 
+          ? {...student, currentLevel: levels.find(l => l._id === levelId).name} 
+          : student
+      ));
+      
       setSuccess('Level assigned successfully');
       setError(null);
+
+      setSelectedLevels(prev => {
+        const newSelected = {...prev};
+        delete newSelected[studentId];
+        return newSelected;
+      });
+    
+      await fetchData();
     } catch (error) {
+      console.error('Error assigning level:', error);
       setError('Error assigning level: ' + error.message);
     }
   };
@@ -295,6 +275,7 @@ const Students = () => {
       setNewLevelDescription('');
       setShowModal(false);
     } catch (error) {
+      console.error('Error adding level:', error);
       setError('Error adding level: ' + error.message);
     }
   };
@@ -321,23 +302,23 @@ const Students = () => {
               <td className="border border-gray-300 p-2">{student.name}</td>
               <td className="border border-gray-300 p-2">{student.lastName}</td>
               <td className="border border-gray-300 p-2">{student.email}</td>
-              <td className="border border-gray-300 p-2">{student.currentLevel ? student.currentLevel.name : 'No asignado'}</td>
+              <td className="border border-gray-300 p-2 text-center">{student.currentLevel || 'Not assigned'}</td>
               <td className="border border-gray-300 p-2">
                 <select
                   value={selectedLevels[student._id] || ''}
                   onChange={(e) => handleLevelChange(student._id, e.target.value)}
-                  className="p-1 border rounded"
+                  className="p-1 border rounded w-40 text-center"
                 >
-                  <option value="">Seleccionar nivel</option>
+                  <option value="">{!student.currentLevel ?  'Select level' : student.currentLevel}</option>
                   {levels.map(level => (
                     <option key={level._id} value={level._id}>{level.name}</option>
                   ))}
                 </select>
-                <button
-                  className="ml-2 bg-blue-500 text-white p-2 rounded"
+                <button 
+                  className="ml-2 bg-blue-500 text-white p-2 rounded" 
                   onClick={() => handleAssignLevel(student._id)}
                 >
-                  Asignar
+                  Assign
                 </button>
               </td>
             </tr>
@@ -345,15 +326,17 @@ const Students = () => {
         </tbody>
       </table>
       {success && <p className="text-green-500 mt-2">{success}</p>}
-      <Link onClick={() => setShowModal(true)} className="mt-4 bg-green-500 text-white px-4 py-2 rounded">Agregar Nivel</Link>
+      <button onClick={() => setShowModal(true)} className="mt-4 bg-green-500 text-white px-4 py-2 rounded">
+        Add Level
+      </button>
 
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded shadow-lg">
-            <h2 className="text-xl mb-4">Agregar Nivel</h2>
+            <h2 className="text-xl mb-4">Add Level</h2>
             <form onSubmit={handleAddLevel}>
               <div className="mb-4">
-                <label className="block text-sm font-medium">Nombre del Nivel:</label>
+                <label className="block text-sm font-medium">Level Name:</label>
                 <input
                   type="text"
                   value={newLevelName}
@@ -363,13 +346,12 @@ const Students = () => {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium">Descripción:</label>
+                <label className="block text-sm font-medium">Description:</label>
                 <input
                   type="text"
                   value={newLevelDescription}
                   onChange={(e) => setNewLevelDescription(e.target.value)}
                   className="border rounded px-2 py-1 w-full"
-                  required
                 />
               </div>
               <div className="flex justify-end">
@@ -378,13 +360,13 @@ const Students = () => {
                   className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
                   onClick={() => setShowModal(false)}
                 >
-                  Cancelar
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="bg-blue-500 text-white px-4 py-2 rounded"
                 >
-                  Agregar
+                  Add
                 </button>
               </div>
             </form>
