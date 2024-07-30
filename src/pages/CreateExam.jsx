@@ -341,25 +341,48 @@ const CreateExam = () => {
     fetchLevels();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await createExam({
-        title,
-        level,
-        timer: timer ? parseInt(timer) : null,
-        questions
-      });
-      alert('Exam created successfully');
-      navigate('/exams');
-    } catch (error) {
-      alert('Error creating exam: ' + error.message);
-    }
-  };
 
-  const handleAddQuestion = (question) => {
-    setQuestions([...questions, question]);
-  };
+/* const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await createExam({
+      title,
+      level,
+      timer: timer ? parseInt(timer) : null,
+      questions
+    });
+    alert('Exam created successfully');
+    navigate('/exams');
+  } catch (error) {
+    alert('Error creating exam: ' + error.message);
+  }
+}; */
+
+// CreateExam.jsx
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (questions.length === 0) {
+    alert('Debes añadir al menos una pregunta al examen.');
+    return;
+  }
+  try {
+    await createExam({
+      title,
+      level,
+      timer: timer ? parseInt(timer) : null,
+      questions
+    });
+    alert('Examen creado con éxito');
+    navigate('/exams');
+  } catch (error) {
+    alert('Error al crear el examen: ' + error.message);
+  }
+};
+
+
+const handleAddQuestion = (newQuestion) => {
+  setQuestions(prevQuestions => [...prevQuestions, newQuestion]);
+};
 
   return (
     <Layout>
@@ -400,25 +423,28 @@ const CreateExam = () => {
             className="w-full p-2 border rounded"
           />
         </div>
+
         <div>
           <h2 className="text-xl font-semibold mb-2">Questions</h2>
-          {questions.map((question, index) => (
+          <QuestionForm onSubmit={handleAddQuestion} />
+          {questions.map((q, index) => (
             <div key={index} className="mb-4 p-4 border rounded">
               <h3 className="font-semibold">Question {index + 1}</h3>
-              <p>{question.question}</p>
-              <p>Type: {question.type}</p>
-              {question.type === 'multiple' && (
+              <p>{q.question}</p>
+              <p>Type: {q.type}</p>
+              {q.type === 'multiple' && (
                 <ul className="list-disc pl-5">
-                  {question.options.map((option, optIndex) => (
-                    <li key={optIndex}>{option}</li>
+                  {q.options.map((opt, i) => (
+                    <li key={i}>{opt}</li>
                   ))}
                 </ul>
               )}
+              <p>Correct Answer: {q.correctAnswer}</p>
             </div>
           ))}
         </div>
-        <QuestionForm onSubmit={handleAddQuestion} />
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        
+        <button  onClick={handleSubmit} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
           Create Exam
         </button>
       </form>

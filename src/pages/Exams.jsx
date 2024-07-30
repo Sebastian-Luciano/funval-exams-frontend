@@ -53,7 +53,7 @@ const Exams = () => {
             <p>Preguntas: {exam.questions.length}</p>
             {user.role === 'teacher' ? (
               <div className="mt-4">
-                <Link to={`/exams/${exam._id}/edit`} className="bg-blue-500 text-white px-3 py-1 rounded mr-2">
+                <Link to={`/exams/edit/${exam._id}`} className="bg-blue-500 text-white px-3 py-1 rounded mr-2">
                   Editar
                 </Link>
                 <button 
