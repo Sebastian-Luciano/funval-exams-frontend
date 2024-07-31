@@ -25,7 +25,7 @@ const Exams = () => {
 export default Exams; */
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useExams } from '../hooks/useExams';
 import { useAuth } from '../hooks/useAuth';
@@ -33,6 +33,11 @@ import { useAuth } from '../hooks/useAuth';
 const Exams = () => {
   const { exams, loading, error, deleteExam } = useExams();
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleEdit = (examId) => {
+    navigate(`/exams/edit/${examId}`);
+  };
 
   if (loading) return <Layout><p>Cargando exámenes...</p></Layout>;
   if (error) return <Layout><p>{error}</p></Layout>;
@@ -53,11 +58,14 @@ const Exams = () => {
             <p>Preguntas: {exam.questions.length}</p>
             {user.role === 'teacher' ? (
               <div className="mt-4">
-                <Link to={`/exams/edit/${exam._id}`} className="bg-blue-500 text-white px-3 py-1 rounded mr-2">
+                <button
+                  onClick={() => handleEdit(exam._id)}
+                  className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
+                >
                   Editar
-                </Link>
-                <button 
-                  onClick={() => deleteExam(exam._id)} 
+                </button>
+                <button
+                  onClick={() => deleteExam(exam._id)}
                   className="bg-red-500 text-white px-3 py-1 rounded"
                 >
                   Eliminar

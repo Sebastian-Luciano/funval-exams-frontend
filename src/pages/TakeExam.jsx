@@ -39,24 +39,6 @@ const TakeExam = () => {
     setVideoBlob(blob);
   };
 
-/*   const handleSubmit = async () => {
-    try {
-      const formData = new FormData();
-      formData.append('answers', JSON.stringify(answers));
-      if (videoBlob) {
-        formData.append('video', videoBlob, 'recording.webm');
-      }
-      await api.post(`/students/submit-exam/${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      alert('Examen enviado con éxito');
-      navigate('/dashboard'); // Redirigir al dashboard después de enviar
-    } catch (error) {
-      console.error('Error submitting exam:', error);
-      alert('Error al enviar el examen: ' + error.message);
-    }
-  }; */
-
   const handleSubmit = async () => {
     try {
       const formData = new FormData();

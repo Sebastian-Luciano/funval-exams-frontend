@@ -35,15 +35,16 @@ export const useExams = () => {
     }
   };
 
+
   const updateExam = async (id, examData) => {
     try {
       const response = await api.put(`/exams/${id}`, examData);
-      setExams(exams.map(exam => exam._id === id ? response.data : exam));
+      console.log('Respuesta de la API:', response.data);
+      // Actualiza el estado local si es necesario
       return response.data;
-    } catch (err) {
-      setError('Error al actualizar el examen');
-      console.error(err);
-      throw err;
+    } catch (error) {
+      console.error('Error en updateExam:', error);
+      throw error;
     }
   };
 
