@@ -15,6 +15,7 @@ import Videos from './pages/Videos';
 import Students from './pages/Students';
 import Grades from './pages/Grades';
 import AddLevel from './pages/AddLevel';
+import TakeExam from './pages/TakeExam';
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -33,6 +34,7 @@ const App = () => {
       <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
       <Route path="/exams" element={user ? <Exams /> : <Navigate to="/login" />} />
       <Route path="/student-exams" element={user?.role === 'student' ? <StudentExams /> : <Navigate to="/dashboard" />} />
+      <Route path="/student-exams/:id" element={<TakeExam />} />
       <Route path="/exam/:id" element={user ? <Exam /> : <Navigate to="/login" />} />
       <Route path="/exams/create" element={user?.role === 'teacher' ? <CreateExam /> : <Navigate to="/dashboard" />} />
       <Route path="/exams/edit/:id" element={user?.role === 'teacher' ? <EditExam /> : <Navigate to="/dashboard" />} />

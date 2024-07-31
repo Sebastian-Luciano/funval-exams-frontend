@@ -10,7 +10,7 @@ export const useStudentExams = () => {
   const fetchStudentExams = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/students/exams');
+      const response = await api.get('/students/exams?populate=level');
       setExams(response.data);
       setError(null);
     } catch (err) {
