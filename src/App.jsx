@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Exams from './pages/Exams';
+import StudentExams from './pages/StudentExams';
 import Exam from './pages/Exam';
 import CreateExam from './pages/CreateExam';
 import EditExam from './pages/EditExam';
@@ -31,6 +32,7 @@ const App = () => {
       {/* Rutas protegidas */}
       <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
       <Route path="/exams" element={user ? <Exams /> : <Navigate to="/login" />} />
+      <Route path="/student-exams" element={user?.role === 'student' ? <StudentExams /> : <Navigate to="/dashboard" />} />
       <Route path="/exam/:id" element={user ? <Exam /> : <Navigate to="/login" />} />
       <Route path="/exams/create" element={user?.role === 'teacher' ? <CreateExam /> : <Navigate to="/dashboard" />} />
       <Route path="/exams/edit/:id" element={user?.role === 'teacher' ? <EditExam /> : <Navigate to="/dashboard" />} />

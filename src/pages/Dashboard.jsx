@@ -52,7 +52,7 @@ const Dashboard = () => {
         )}
         {user.role === 'student' && (
           <>
-            <Link to="/exams" className="bg-blue-500 text-white p-4 rounded hover:bg-blue-600">
+            <Link to="/student-exams" className="bg-blue-500 text-white p-4 rounded hover:bg-blue-600">
               Ver Exámenes Disponibles
             </Link>
             <Link to="/grades" className="bg-green-500 text-white p-4 rounded hover:bg-green-600">
