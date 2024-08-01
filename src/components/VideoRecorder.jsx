@@ -1,70 +1,4 @@
-/* import React, { useState } from 'react';
-import { useReactMediaRecorder } from 'react-media-recorder';
-import api from '../utils/api';
-
-const VideoRecorder = ({ examId }) => {
-  const [status, setStatus] = useState('idle');
-  const { startRecording, stopRecording, mediaBlobUrl } = useReactMediaRecorder({ video: true });
-
-  const handleStartRecording = () => {
-    setStatus('recording');
-    startRecording();
-  };
-
-  const handleStopRecording = () => {
-    setStatus('stopped');
-    stopRecording();
-  };
-
-  const handleUpload = async () => {
-    if (!mediaBlobUrl) return;
-
-    const blob = await fetch(mediaBlobUrl).then(r => r.blob());
-    const formData = new FormData();
-    formData.append('video', blob, 'recording.webm');
-    formData.append('examId', examId);
-
-    try {
-      await api.post('/videos', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setStatus('uploaded');
-    } catch (error) {
-      console.error('Error uploading video:', error);
-      setStatus('error');
-    }
-  };
-
-  return (
-    <div className="mt-4">
-      {status === 'idle' && (
-        <button onClick={handleStartRecording} className="bg-green-500 text-white px-4 py-2 rounded">
-          Start Recording
-        </button>
-      )}
-      {status === 'recording' && (
-        <button onClick={handleStopRecording} className="bg-red-500 text-white px-4 py-2 rounded">
-          Stop Recording
-        </button>
-      )}
-      {status === 'stopped' && (
-        <>
-          <video src={mediaBlobUrl} controls className="mt-4 w-full" />
-          <button onClick={handleUpload} className="bg-blue-500 text-white px-4 py-2 rounded mt-4">
-            Upload Video
-          </button>
-        </>
-      )}
-      {status === 'uploaded' && <p className="text-green-500 mt-4">Video uploaded successfully!</p>}
-      {status === 'error' && <p className="text-red-500 mt-4">Error uploading video. Please try again.</p>}
-    </div>
-  );
-};
-
-export default VideoRecorder; */
-
-
-import React, { useState, useRef } from 'react';
+/* import React, { useState, useRef } from 'react';
 
 const VideoRecorder = ({ onRecordingComplete }) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -109,6 +43,96 @@ const VideoRecorder = ({ onRecordingComplete }) => {
       )}
       {videoBlob && (
         <video src={URL.createObjectURL(videoBlob)} controls />
+      )}
+    </div>
+  );
+};
+
+export default VideoRecorder; */
+
+
+import React, { useState, useRef, useCallback } from 'react';
+
+const VideoRecorder = ({ onRecordingComplete }) => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [videoBlob, setVideoBlob] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const videoRef = useRef(null);
+  const chunksRef = useRef([]);
+
+  
+
+  const startRecording = useCallback(async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    videoRef.current.srcObject = stream;
+    mediaRecorderRef.current = new MediaRecorder(stream);
+  
+     mediaRecorderRef.current.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunksRef.current.push(event.data);
+      }
+    };
+ 
+    mediaRecorderRef.current.onstop = () => {
+      const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+      setVideoBlob(blob);
+      onRecordingComplete(blob);
+      stream.getTracks().forEach(track => track.stop());
+    };
+
+    mediaRecorderRef.current.start();
+    setIsRecording(true);
+    setIsPaused(false);
+  }, [onRecordingComplete]);
+
+  const pauseRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.pause();
+      setIsPaused(true);
+    }
+  };
+
+  const resumeRecording = () => {
+    if (mediaRecorderRef.current && isPaused) {
+      mediaRecorderRef.current.resume();
+      setIsPaused(false);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setIsPaused(false);
+    }
+  };
+
+  return (
+    <div className="video-recorder">
+      <video ref={videoRef} autoPlay muted className="video-preview" />
+      {!isRecording && !videoBlob && (
+        <button onClick={startRecording} className="btn btn-primary bg-green-500 text-white px-4 py-2 rounded">
+          Iniciar Grabación
+        </button>
+      )}
+      {isRecording && !isPaused && (
+        <button onClick={pauseRecording} className="btn btn-warning bg-gray-500 text-white px-4 py-2 rounded">
+          Pausar Grabación
+        </button>
+      )}
+      {isRecording && isPaused && (
+        <button onClick={resumeRecording} className="btn btn-info bg-green-500 text-white px-4 py-2 rounded">
+          Continuar Grabación
+        </button>
+      )}
+      {isRecording && (
+        <button onClick={stopRecording} className="btn btn-danger bg-red-500 text-white px-4 py-2 rounded">
+          Detener Grabación
+        </button>
+      )}
+      {videoBlob && (
+        <video src={URL.createObjectURL(videoBlob)} controls className="recorded-video" />
       )}
     </div>
   );

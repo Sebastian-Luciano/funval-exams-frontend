@@ -11,11 +11,15 @@ export const useExams = () => {
     try {
       setLoading(true);
       const response = await api.get('/exams');
-      setExams(response.data);
+      if (Array.isArray(response.data)) {
+        setExams(response.data);
+      } else {
+        throw new Error('La respuesta no es un array');
+      }
       setError(null);
     } catch (err) {
-      setError('Error al cargar los exámenes');
-      console.error(err);
+      setError('Error al cargar los exámenes: ' + err.message);
+      setExams([]);
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,3 @@
-// src/hooks/useStudentExams.js
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
 
@@ -10,13 +9,13 @@ export const useStudentExams = () => {
   const fetchStudentExams = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/students/exams?populate=level');
+      const response = await api.get('/students/exams');
       setExams(response.data);
       setError(null);
     } catch (err) {
-        console.error('Error fetching student exams:', err);
-        setError('Error al cargar los exámenes. Por favor, intenta de nuevo más tarde.');
-        setExams([]);
+      console.error('Error fetching student exams:', err);
+      setError('Error al cargar los exámenes. Por favor, intenta de nuevo más tarde.');
+      setExams([]);
     } finally {
       setLoading(false);
     }
