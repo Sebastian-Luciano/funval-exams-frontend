@@ -291,7 +291,8 @@ const QuestionForm = ({ onSubmit }) => {
       question,
       type,
       options: type === 'multiple' ? options.filter(option => option.trim() !== '') : [],
-      correctAnswer
+      correctAnswer: type === 'multiple' ? correctAnswer : correctAnswer.trim()
+
     };
 
 
@@ -368,7 +369,7 @@ const QuestionForm = ({ onSubmit }) => {
             >
               <option value="">Select correct answer</option>
               {options.map((option, index) => (
-                <option key={index} value={index}>{option}</option>
+                <option key={index} value={option}>{option}</option>
               ))}
             </select>
           )}
